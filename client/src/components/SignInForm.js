@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, } from 'react';
 import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -8,10 +8,8 @@ import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 // Template taken from https://github.com/mui-org/material-ui/blob/master/docs/src/pages/getting-started/templates/sign-in/SignIn.js
-import axios from 'axios';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
-import PaymentMonitoring from '../views/admin/PaymentMonitoring';
-
+import { BrowserRouter as Router, useHistory } from 'react-router-dom';
+import authentication from '../utils/authentication';
 const useStyles = makeStyles((theme) => ({
   paper: {
     marginTop: theme.spacing(8),
@@ -39,27 +37,23 @@ export default function SignIn() {
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPsswd, setloginPsswd] = useState("");
 
-  const handleSubmit = (e) => {
+  let history = useHistory();
+  // let location = useLocation();
+  let to = "/admin"; // this will have to change eventually depending on user
+  const login = (e) => {
     e.preventDefault();
-    axios({
-      method: 'POST',
-      data: {
-        username: loginUsername,
-        password: loginPsswd
-      },
-      withCredentials: true,
-      url: 'http://localhost:5000/login', // change url in development
-    }).then((res) => {
-      if(res.data.msg === 'success') {
-        console.log("succesful login");
-        return ( <Route to="/admin" component={PaymentMonitoring} /> )
+    authentication.authenticate(loginUsername,loginPsswd, (err,auth) => {
+      console.log("Inside callback in SignInForm");
+      if(err) {
+        alert("Error de autenticación");
+        authentication.isAuthenticated = false;
       }
-    }).catch((err) => {
-      // design user feedback for auth error
-      console.log(err);
+      else{
+        history.replace(to);
+      }
     })
+    
   }
-
   return (
     <Router>
         <Container component="main" maxWidth="xs">
@@ -71,7 +65,7 @@ export default function SignIn() {
             <Typography component="h1" variant="h5">
                 Iniciar sesión
             </Typography>
-            <form className={classes.form} noValidate={false} onSubmit={handleSubmit} >
+            <form className={classes.form} noValidate={false} onSubmit={login} >
               <TextField
                 variant="outlined"
                 margin="normal"
@@ -109,6 +103,5 @@ export default function SignIn() {
           </div>
         </Container>
     </Router>
-    
   );
 }

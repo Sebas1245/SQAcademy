@@ -1,9 +1,13 @@
 import React from 'react';
 import SignInForm from './components/SignInForm';
+import PaymentMonitoring from './views/admin/PaymentMonitoring';
+import SQAcademyInfo from './views/SQAcademyInfo';
 import {
   createMuiTheme,
   MuiThemeProvider
 } from "@material-ui/core/styles";
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import authentication from './utils/authentication';
 
 const theme = createMuiTheme({
   palette: {
@@ -30,12 +34,34 @@ const theme = createMuiTheme({
   // }
 });
 
+function AdminRoute({ children , ...rest }){
+  return (
+    <Route
+      {...rest}
+      render={ ({ location }) => {
+        return authentication.isAuthenticated ? 
+        ( children ) : 
+        ( <Redirect to={{ pathname: "/login", from: location }} /> )
+      }
+      }    
+    />
+  )
+}
+
 function App() {
   return (
     <MuiThemeProvider theme={theme}>
-      <div className="App">
-        <SignInForm />
-      </div>
+      <Router>
+        <div className="App">
+          <Switch>
+            <Route exact path="/" component={SQAcademyInfo} />
+            <Route path="/login" component={SignInForm} />
+            <AdminRoute path="/admin">
+              <PaymentMonitoring />
+            </AdminRoute>
+          </Switch>
+        </div>
+      </Router>
     </MuiThemeProvider>
   );
 }
