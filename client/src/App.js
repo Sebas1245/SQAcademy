@@ -1,7 +1,7 @@
 import React from 'react';
 import SignInForm from './components/SignInForm';
 import PaymentMonitoring from './views/admin/PaymentMonitoring';
-import SQAcademyInfo from './views/SQAcademyInfo';
+import SQAcademyInfo from './views/HomePage';
 import {
   createMuiTheme,
   MuiThemeProvider
