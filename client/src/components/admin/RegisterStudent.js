@@ -15,7 +15,7 @@ import {
     KeyboardDatePicker,
   } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/moment';
-
+import axios from 'axios';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -49,16 +49,18 @@ export default function BasicTextFields() {
       email: '',
       phone: '',
       group: '',
-      paymentAmount: '',
+      paymentAmount: 0,
       cycle: 'Weekly',
-      additionalAmount: '',
+      additionalAmount: 0,
       additionalAmountDescription: '',
-      errorMsg: ''
+      errorMsg: '',
+      successMsg: '',
     });
     const [startDate, setStartDate] = React.useState(new Date());
     const [firstPaymentDate, setFirstPaymentDate] = React.useState(null);
     const [additionalAmountDeadline, setAdditionalAmountDeadline] = React.useState(null);
-    const [open, setOpen] = React.useState(false);
+    const [openErrMsg, setOpenErrMsg] = React.useState(false);
+    const [openSuccMsg, setOpenSuccMsg] = React.useState(false);
 
 
     const handleChange = (event) => {
@@ -79,26 +81,73 @@ export default function BasicTextFields() {
     const handleAdditionalAmountDeadlineChange = (date) => {
     setAdditionalAmountDeadline(date);
     }
-    const handleClose = () => {
-        setOpen(false);
+    const handleErrClose = () => {
+        setOpenErrMsg(false);
+    }
+
+    const handleSuccClose = () => {
+        setOpenSuccMsg(false);
     }
     const handleSubmit = (e) => {
         e.preventDefault();
-        if(state.fullName === '' || state.email === '' || state.phone === '' || state.group === '' || state.paymentAmount === '') {
+        if(state.fullName === '' || state.email === '' || state.phone === '' || state.group === '' || state.paymentAmount === 0) {
             setState({
                 ...state,
                 errorMsg: 'Debe llenar todos los campos obligatorios.'
             })
-            console.log(state.errorMsg);
-            setOpen(true);
+            setOpenErrMsg(true);
         }
         else{
-            alert("Se puede proceder con el post");
+            axios.post("http://localhost:5000/admin/register_student",
+                {
+                    name: state.fullName,
+                    email: state.email,
+                    phone: state.phone,
+                    classGroup: state.group,
+                    paymentAmount: state.paymentAmount,
+                    paymentCycle: state.cycle,
+                    classStart: startDate,
+                    firstPaymentDate,
+                    additionalAmount: state.additionalAmount,
+                    additionalAmountDeadline,
+                    additionalAmountDescription: state.additionalAmountDescription
+
+                }
+            )
+            .then((res) => {
+                if(res.data.msg === 'success') {
+                    setFirstPaymentDate(null);
+                    setAdditionalAmountDeadline(null);
+                    setStartDate(new Date())
+                    setState({
+                        ...state,
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        group: '',
+                        paymentAmount: 0,
+                        cycle: 'Weekly',
+                        additionalAmount: 0,
+                        additionalAmountDescription: '',
+                        successMsg: 'El alumno se creó exitosamente'
+                    })
+                    document.getElementById('register-student-form').reset();
+                    setOpenSuccMsg(true);
+                }
+            })
+            .catch((err) => {
+                console.log(err);
+                setState({
+                    ...state,
+                    errorMsg: 'Error de servidor',
+                })
+                setOpenErrMsg(true);
+            })
         }
     }
     return (
         <div>
-            <form className={classes.form} noValidate autoComplete="off" onSubmit={handleSubmit}>
+            <form id="register-student-form" className={classes.form} noValidate autoComplete="off" onSubmit={handleSubmit}>
             <Grid className={classes.root} spacing={4} container>
                 <Grid item xs={12}>
                     <Typography variant="h4" className={classes.titles}>
@@ -125,7 +174,7 @@ export default function BasicTextFields() {
                     <FormControl className={classes.formControl}>
                         <Select
                             name="cycle"
-                            labelId="payment-cycle-label"
+                            labelid="payment-cycle-label"
                             value={state.cycle}
                             onChange={handleChange}
                         >
@@ -146,7 +195,7 @@ export default function BasicTextFields() {
                         margin="normal"
                         name="startDate"
                         id="date-picker-inline"
-                        labelId="start-date-picker"
+                        labelid="start-date-picker"
                         value={startDate}
                         onChange={handleStartDateChange}
                         KeyboardButtonProps = {{
@@ -216,9 +265,14 @@ export default function BasicTextFields() {
                 </Grid>
             </Grid>
             </form>
-            <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
-                <Alert elevation={6} variant="filled" onClose={handleClose} severity="error">
+            <Snackbar open={openErrMsg} autoHideDuration={6000} onClose={handleErrClose}>
+                <Alert elevation={6} variant="filled" onClose={handleErrClose} severity="error">
                     {state.errorMsg}
+                </Alert>
+            </Snackbar>
+            <Snackbar open={openSuccMsg} autoHideDuration={6000} onClose={handleSuccClose}>
+                <Alert elevation={6} variant="filled" onClose={handleSuccClose} severity="success">
+                    {state.successMsg}
                 </Alert>
             </Snackbar>
         </div>          

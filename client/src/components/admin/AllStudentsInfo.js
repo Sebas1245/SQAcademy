@@ -1,7 +1,9 @@
 import React from 'react';
 
-export default function AllStudentsInfo(props){
+export default function AllStudentsInfo(){
     return(
-        <h1>Hello from AllStudentsInfo</h1>
+        <div>
+            Hello from AllStudentsInfo
+        </div>
     )
 }

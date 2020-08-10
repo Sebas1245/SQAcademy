@@ -1,3 +1,5 @@
+const student = require('./models/student');
+
 require('dotenv').config();
 
 const   express = require('express'),
@@ -11,7 +13,8 @@ const   express = require('express'),
         session = require('express-session'),
         bodyParser = require('body-parser'),
         app = express(),
-        User = require('./models/user');
+        User = require('./models/user'),
+        Student = require('./models/student'),
         PORT = process.env.PORT || 5000;
 
 
@@ -84,7 +87,6 @@ app.use(express.static(path.resolve('../client/build')));
 
 // Authentication route
 app.post("/login", function(req, res, next){
-    console.log("Inside login route");
     passport.authenticate("local", (err, user, info) => {
         if (err) throw err; 
         if (!user) res.status(401).send({msg: 'Error de autenticación'});
@@ -96,9 +98,67 @@ app.post("/login", function(req, res, next){
             })
         }
     })(req, res, next)
-})
+});
+
+// ---------------------- ADMIN ROUTES ------------------------------------ 
+// Register student post route
+app.post("/admin/register_student", isLoggedIn, function(req,res,next) {
+    let { 
+        name, 
+        email, 
+        phone, 
+        classGroup, 
+        paymentAmount, 
+        paymentCycle, 
+        classStart, 
+        firstPaymentDate, 
+        additionalAmount, 
+        additionalAmountDescription, 
+        additionalAmountDeadline } = req.body;
+    if(firstPaymentDate === null) {
+        firstPaymentDate = [];
+    }
+    if(additionalAmountDeadline === null) {
+        additionalAmountDeadline = undefined;
+    }
+    if(additionalAmount === 0) {
+        console.log(additionalAmount);
+    }
+    if(additionalAmountDescription === '') {
+        additionalAmountDescription = undefined;
+    }
+    const newStudent = new Student({
+        name: name,
+        email: email,
+        phone: phone,
+        classGroup: classGroup,
+        paymentAmount: paymentAmount,
+        paymentCycle: paymentCycle,
+        classStart: classStart,
+        additionalAmount: additionalAmount,
+        additionalAmountDescription: additionalAmountDescription,
+        additionalAmountDeadline: additionalAmountDeadline,
+        paymentHistory: firstPaymentDate
+    });
+
+    newStudent.save((err, createdStudent) => {
+        if(err) throw err;
+        res.send({msg: 'success', createdStudent: createdStudent});
+        console.log(createdStudent);
+    });
+
+});
+
+// -------------------------------------------------------------------------------------------------------------------------------
 
 
+// middleware
+function isLoggedIn(req,res,next){
+    if (req.isAuthenticated()){
+        return next();
+    }
+    throw console.error("User is not authenticated");
+}
 // Redirects everything else to index
 app.get('/', (req, res) => {
     res.sendFile(path.resolve('../client/build/index.html'));

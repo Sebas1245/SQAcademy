@@ -1,15 +1,15 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
-import PropTypes from 'prop-types';
-import Typography from '@material-ui/core/Typography';
+import Box  from '@material-ui/core/Box';
 // Components for Tabs
 import RegisterStudent from '../../components/admin/RegisterStudent';
 import DisplayLateStudent from '../../components/admin/DisplayLateStudents';
 import AllStudentsInfo from '../../components/admin/AllStudentsInfo';
-import Box  from '@material-ui/core/Box';
+
 
 
 function TabPanel(props) {
@@ -24,8 +24,8 @@ function TabPanel(props) {
         {...other}
       >
         {(
-          <Box p={3}>
-            <Typography>{children}</Typography>
+          <Box p={5}>
+            {children}
           </Box>
         )}
       </div>

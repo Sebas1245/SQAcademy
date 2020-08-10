@@ -3,7 +3,6 @@ import axios from 'axios';
 const authentication = {
     isAuthenticated: false,
     authenticate(username,password,cb) {
-        console.log("Inside authenticate method");
         axios({
             method: 'POST',
             data: {
@@ -15,7 +14,6 @@ const authentication = {
         }).then((res) => {
           if(res.data.msg === 'success') {
               authentication.isAuthenticated = true;
-              console.log(authentication);
               cb(null, authentication.isAuthenticated);
           }
         }).catch((err) => {
