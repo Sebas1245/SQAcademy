@@ -1,4 +1,7 @@
 const student = require('./models/student');
+const transactions = require('./models/transactions');
+const { update, create } = require('./models/student');
+const { urlencoded } = require('body-parser');
 
 require('dotenv').config();
 
@@ -15,6 +18,7 @@ const   express = require('express'),
         app = express(),
         User = require('./models/user'),
         Student = require('./models/student'),
+        Transaction = require('./models/transactions'),
         PORT = process.env.PORT || 5000;
 
 
@@ -101,8 +105,59 @@ app.post("/login", function(req, res, next){
 });
 
 // ---------------------- ADMIN ROUTES ------------------------------------ 
+
+// Get all students 
+app.get("/admin/get_all_students", function(req,res,next){
+    let allStudentsInfo = [];
+    Student.find({}, (err,allStudents) => {
+        if(err) {
+            res.status(500).send({err: err});
+            throw err;
+        }
+        allStudents.forEach((student) => {
+            let formattedLastPaymentMade = student.lastPaymentMade.toLocaleDateString(); 
+            let formattedCycle = student.paymentCycle;
+            switch(formattedCycle) {
+                case 'Weekly': 
+                    formattedCycle = 'Semanal';
+                    break;
+                case 'Monthly': 
+                    formattedCycle = 'Mensual';
+                    break;
+                case 'Quarterly': 
+                    formattedCycle = 'Trimestral';
+                    break;
+                default:
+                    break;
+            }
+            let studentInfo = {
+                _id: student._id,
+                name: student.name,
+                phone: student.phone,
+                email: student.email,
+                group: student.classGroup,
+                balance: student.balance,
+                cycle: formattedCycle,
+                lastPaymentMade: formattedLastPaymentMade,
+            };
+            allStudentsInfo.push(studentInfo);
+        })
+        res.send({msg: 'success', allStudents: allStudentsInfo})
+    });
+});
+
+// Get transactions for a specific student
+app.get("/admin/get_all_students/get_transactions/:student_id", function(req,res,next){
+    const studentId = req.params.student_id;
+    Transaction.find({referenceTo: studentId},(err, allTransactionsForStudent) => {
+        if(err) throw err;
+        console.log(allTransactionsForStudent);
+        res.send({msg: 'success', allTransactions: allTransactionsForStudent})
+    })
+});
+
 // Register student post route
-app.post("/admin/register_student", isLoggedIn, function(req,res,next) {
+app.post("/admin/register_student", function(req,res,next) {
     let { 
         name, 
         email, 
@@ -111,22 +166,14 @@ app.post("/admin/register_student", isLoggedIn, function(req,res,next) {
         paymentAmount, 
         paymentCycle, 
         classStart, 
-        firstPaymentDate, 
+        firstPaymentDate,
+        firstPaymentAmount, 
         additionalAmount, 
         additionalAmountDescription, 
         additionalAmountDeadline } = req.body;
-    if(firstPaymentDate === null) {
-        firstPaymentDate = [];
-    }
-    if(additionalAmountDeadline === null) {
-        additionalAmountDeadline = undefined;
-    }
-    if(additionalAmount === 0) {
-        console.log(additionalAmount);
-    }
-    if(additionalAmountDescription === '') {
-        additionalAmountDescription = undefined;
-    }
+
+    let balance = paymentAmount-firstPaymentAmount;
+
     const newStudent = new Student({
         name: name,
         email: email,
@@ -134,20 +181,134 @@ app.post("/admin/register_student", isLoggedIn, function(req,res,next) {
         classGroup: classGroup,
         paymentAmount: paymentAmount,
         paymentCycle: paymentCycle,
-        classStart: classStart,
+        firstClass: classStart,
         additionalAmount: additionalAmount,
         additionalAmountDescription: additionalAmountDescription,
         additionalAmountDeadline: additionalAmountDeadline,
-        paymentHistory: firstPaymentDate
+        isActive: true,
+        balance: balance,
+        lastPaymentMade: firstPaymentDate
     });
 
     newStudent.save((err, createdStudent) => {
-        if(err) throw err;
-        res.send({msg: 'success', createdStudent: createdStudent});
-        console.log(createdStudent);
+        if(err) {
+            res.status(500).send({error: 'Error al crear al alumno'});
+            throw err;
+        }
+        if(firstPaymentAmount === 0 && additionalAmount === 0) {
+            res.send({msg: 'success', createdStudent: createdStudent});
+        }
     });
+    // save a new transaction if incoming student has already made a payment
+    if(firstPaymentAmount > 0){
+        createTransaction('payment',newStudent._id, firstPaymentAmount,firstPaymentDate, "Pago inicial de clases junto con inscripción");
+        res.send({msg: 'success', createdStudent: newStudent})
+    }
+    else{
+        res.status(500).send({error: 'Error de servidor al crear al alumno'})
+    }
 
 });
+
+// Register transaction for a student route
+app.post("/admin/register_student_payment", function (req,res,next) {    
+    const { refersTo, amount, date, identifier } = req.body;
+    let previousBalance;
+    if(identifier === 'ClassPayment') {
+        createTransaction('payment', refersTo, amount, date, 'Abono a lo que se debe por las clases.');
+        Student.findById(refersTo, (err, student) => {
+            if(err) throw err;
+            console.log(student);
+            previousBalance = student.balance;
+            console.log(previousBalance);
+            let newBalance = previousBalance - amount;
+            Student.findByIdAndUpdate(refersTo, {balance: newBalance}, (err, updatedStudent) => {
+                if(err) throw err;
+                console.log(updatedStudent);
+                res.send({msg: 'success'});
+            })
+        })
+    }
+    else if(identifier === 'Additional'){
+        let additionalDesc = '';
+        Student.findById(refersTo, (err, student) => {
+            if(err) throw err;
+            previousBalance = student.balance;
+            additionalDesc = student.additionalAmountDescription;
+            createTransaction('payment', refersTo, amount, date, 'Pago del adeudo de ' + additionalDesc);
+            let newBalance = previousBalance - amount;
+            Student.findByIdAndUpdate(refersTo, {balance: newBalance}, (err, updatedStudent) => {
+                if(err) throw err;
+                console.log(updatedStudent);
+                res.send({msg: 'success'});
+            })
+        })
+    }
+});
+
+app.get("/admin/overdue_payments", function(req,res){
+    let lateStudents = [];
+    Students.find({},(err,allStudents) => {
+        if(err) throw err;
+        allStudents.forEach((student) => {
+            let paymentCycle = student.paymentCycle;
+            let paymentDeadline = student.lastPaymentMade;
+            // in switch do something to paymentDeadline
+            switch (paymentCycle) {
+                case 'Weekly':
+                    paymentDeadline.setDate(paymentDeadline.getDate()+7);
+                    break;
+                case 'Monthly':
+                    paymentDeadline.setMonth(paymentDeadline.getMonth()+1);
+                    break;
+                case 'Quarterly':
+                    paymentDeadline.setMonth(paymentDeadline.getMonth()+3);
+                    break;
+                default:
+                    break;
+            }
+            Transaction.find({referenceTo: student._id}, (err, allTransactionsForStudent) => {
+                console.log(student);
+                let lastTransaction = allTransactionsForStudent[allTransactionsForStudent.length()-1];
+                // if the last registered transaction for the student is a charge and this charge exceeds the deadline
+                // the student is late with payment
+                if(lastTransaction.kind === 'charge' && paymentDeadline <= lastTransaction.date ) {
+                    lateStudents.push(student);
+                }
+                else if(student.balance > 0){
+                    lateStudents.push(student);
+                }
+                else{
+                    // if the student is late with payment a charge must be created
+                    createTransaction('charge', student._id, student.paymentAmount, new Date(), "Retraso en el pago mensual de sus clases.");
+                    // update the student's balance to reflect the new charge
+                    let newBalance = student.balance + student.paymentAmount;
+                    Student.findByIdAndUpdate(student._id, {balance: newBalance}, {new: true}, (err,updatedStudent) => {
+                        lateStudents.push(updatedStudent);
+                    })
+                }
+            });
+        })
+        res.send({msg: 'success', lateStudents: lateStudents})
+    });
+    
+});
+
+function createTransaction(kind, referenceTo, amount, date, description){
+    const newTransaction = new Transaction({
+        kind: kind,
+        referenceTo: referenceTo,
+        amount: amount,
+        date: date,
+        description: description
+    });
+    newTransaction.save((err,createdTransaction) => {
+        if(err) {
+            res.status(500).send({error: err});
+            throw err;
+        }
+    })
+}
 
 // -------------------------------------------------------------------------------------------------------------------------------
 

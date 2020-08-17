@@ -29,7 +29,7 @@ let studetSchema = new mongoose.Schema({
         type: String, 
         required: [true,buildErrString("un ciclo de pago")]
     },
-    classStart: {
+    firstClass: {
         type: Date,
         required: [true, buildErrString("una fecha para la primera clase")]
     },
@@ -49,24 +49,11 @@ let studetSchema = new mongoose.Schema({
         type: Boolean,
         required: [false, '']
     },
-    // calculated fields
-    lateWithPayment: {
-        type: Boolean,
-        required: [false, '']
-    },
     balance: {
         type: Number,
         required: [false, '']
     },
-    lastPaymentDate: {
-        type: Date,
-        required: [false, '']
-    },
-    paymentHistory: {
-        type: [Date],
-        required: [false, '']
-    },
-    lastUpdated: {
+    lastPaymentMade: {
         type: Date,
         required: [false, '']
     },

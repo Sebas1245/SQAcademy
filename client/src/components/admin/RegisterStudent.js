@@ -51,6 +51,7 @@ export default function BasicTextFields() {
       group: '',
       paymentAmount: 0,
       cycle: 'Weekly',
+      firstPaymentAmount: 0,
       additionalAmount: 0,
       additionalAmountDescription: '',
       errorMsg: '',
@@ -71,8 +72,7 @@ export default function BasicTextFields() {
     };
 
     const handleStartDateChange = (date) => {
-    setStartDate(date);
-    console.log(startDate);
+        setStartDate(date);
     };
 
     const handleFirstPaymentDateChange = (date) => {
@@ -108,6 +108,7 @@ export default function BasicTextFields() {
                     paymentCycle: state.cycle,
                     classStart: startDate,
                     firstPaymentDate,
+                    firstPaymentAmount: state.firstPaymentAmount,
                     additionalAmount: state.additionalAmount,
                     additionalAmountDeadline,
                     additionalAmountDescription: state.additionalAmountDescription
@@ -128,11 +129,13 @@ export default function BasicTextFields() {
                         paymentAmount: 0,
                         cycle: 'Weekly',
                         additionalAmount: 0,
+                        firstPaymentAmount: 0,
                         additionalAmountDescription: '',
                         successMsg: 'El alumno se creó exitosamente'
                     })
                     document.getElementById('register-student-form').reset();
                     setOpenSuccMsg(true);
+                    setTimeout(window.location.reload(false), 3200);
                 }
             })
             .catch((err) => {
@@ -209,7 +212,7 @@ export default function BasicTextFields() {
                         Campos opcionales
                     </Typography>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
                     <MuiPickersUtilsProvider utils={DateFnsUtils}>
                     <KeyboardDatePicker
                         disableToolbar
@@ -228,10 +231,13 @@ export default function BasicTextFields() {
                         />
                     </MuiPickersUtilsProvider>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
+                    <TextField className={classes.inputs} name="firstPaymentAmount" type="number" label="Cantidad de primer pago"  onChange={handleChange} />
+                </Grid>
+                <Grid item xs={6}>
                     <TextField className={classes.inputs} name="additionalAmount" type="number" label="Montos adicionales"  onChange={handleChange} />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
                     <MuiPickersUtilsProvider utils={DateFnsUtils}>
                     <KeyboardDatePicker
                         disableToolbar

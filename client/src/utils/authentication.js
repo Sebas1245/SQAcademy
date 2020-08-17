@@ -14,6 +14,7 @@ const authentication = {
         }).then((res) => {
           if(res.data.msg === 'success') {
               authentication.isAuthenticated = true;
+              localStorage.setItem("authenticated", true);
               cb(null, authentication.isAuthenticated);
           }
         }).catch((err) => {

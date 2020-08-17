@@ -39,7 +39,7 @@ function AdminRoute({ children , ...rest }){
     <Route
       {...rest}
       render={ ({ location }) => {
-        return authentication.isAuthenticated ? 
+        return authentication.isAuthenticated || localStorage.getItem("authenticated") ? 
         ( children ) : 
         ( <Redirect to={{ pathname: "/login", from: location }} /> )
       }
