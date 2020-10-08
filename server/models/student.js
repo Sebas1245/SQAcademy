@@ -53,10 +53,18 @@ let studetSchema = new mongoose.Schema({
         type: Number,
         required: [false, '']
     },
+    additionalBalance: {
+        type: Number,
+        required: [false,'']
+    },
     lastPaymentMade: {
         type: Date,
         required: [false, '']
     },
+    paymentDeadline: {
+        type: Date,
+        required: [true, 'No se pudo calcular una fecha límite para el pago de la clase']
+    }
 })
 
 module.exports = mongoose.model("Student", studetSchema);

@@ -42,10 +42,6 @@ const useStyles = makeStyles((theme) => ({
         marginBottom: theme.spacing(2),
         minWidth: '100%'
     },
-    title: {
-        color: theme.palette.primary.dark,
-        fontWeight: 500
-    }
   }));
 
 export default function RegisterStudentPayment ({studentId, studentName}) {
@@ -129,7 +125,7 @@ export default function RegisterStudentPayment ({studentId, studentName}) {
             <form id="register-student-payment-form" className={classes.form} noValidate autoComplete="off" onSubmit={handleSubmit}>
             <Grid className={classes.paper} spacing={3}>
                 <Grid xs={12}>
-                    <Typography className={classes.title} variant="h5">Registrar pago para {studentName} </Typography>
+                    <Typography variant="h3">Registrar pago para {studentName} </Typography>
                 </Grid>
                 <Grid xs={12}>
                     <TextField className={classes.inputs} label="Monto" name="amount" type="number" onChange={handleChange} />

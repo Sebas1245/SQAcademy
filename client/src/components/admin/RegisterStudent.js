@@ -37,7 +37,7 @@ const useStyles = makeStyles((theme) => ({
     minWidth: '100%'
   },
   titles: {
-      color: theme.palette.secondary.dark,
+      color: theme.palette.primary.dark,
       fontWeight: 500
   },
 }));
