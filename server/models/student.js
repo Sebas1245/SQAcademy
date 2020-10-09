@@ -64,6 +64,10 @@ let studetSchema = new mongoose.Schema({
     paymentDeadline: {
         type: Date,
         required: [true, 'No se pudo calcular una fecha límite para el pago de la clase']
+    },
+    paymentLate: {
+        type: Boolean,
+        required: [true, 'No se sabe si el alumno está al dia con sus pagos.']
     }
 })
 

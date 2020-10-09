@@ -2,6 +2,7 @@ const student = require('./models/student');
 const transactions = require('./models/transactions');
 const { update, create } = require('./models/student');
 const { urlencoded } = require('body-parser');
+const { resolve } = require('path');
 
 require('dotenv').config();
 
@@ -109,16 +110,20 @@ app.post("/login", function(req, res, next){
 
 // Get all students 
 app.get("/admin/get_all_students", function(req,res,next){
-    let allStudentsInfo = [];
-    let lateStudents = getStudentsWithOverduePayments();
-    Student.find({}, (err,allStudents) => {
-        if(err) {
-            res.status(500).send({err: err});
-            throw err;
-        }
+    let lateStudents = []
+    getStudentsWithOverduePayments()
+    .then(overdueStudents => {
+        console.log(overdueStudents)
+        return Student.find({}).exec();
+    })
+    .then(allStudents => {
+        let allStudentsInfo = [];
         allStudents.forEach((student) => {
             let formattedLastPaymentMade = (student.lastPaymentMade != null) ? (student.lastPaymentMade.toLocaleDateString()) : ('Sin pagos'); 
             let formattedCycle = student.paymentCycle;
+            if(student.paymentLate){
+                lateStudents.push(student);
+            }
             switch(formattedCycle) {
                 case 'Weekly': 
                     formattedCycle = 'Semanal';
@@ -145,10 +150,11 @@ app.get("/admin/get_all_students", function(req,res,next){
             };
             allStudentsInfo.push(studentInfo);
         })
-        
-        console.log('late students array ' + lateStudents);
-        res.send({msg: 'success', allStudents: allStudentsInfo, lateStudents: lateStudents })
-    });
+        console.log('late students before res send '+lateStudents);
+        return res.send({ msg: 'success', allStudents: allStudentsInfo, lateStudents: lateStudents })
+
+    })
+    .catch(err => next(err))
 });
 
 // Get transactions for a specific student
@@ -194,7 +200,8 @@ app.post("/admin/register_student", function(req,res,next) {
         balance: balance,
         additionalBalance: additionalAmount,
         lastPaymentMade: firstPaymentDate,
-        paymentDeadline: paymentDeadline
+        paymentDeadline: paymentDeadline,
+        paymentLate: false
     });
 
     newStudent.save((err, createdStudent) => {
@@ -208,7 +215,7 @@ app.post("/admin/register_student", function(req,res,next) {
         }
         // save a new transaction if incoming student has already made a payment
         else if(firstPaymentAmount > 0){
-            createTransaction('payment',newStudent._id, firstPaymentAmount,firstPaymentDate, "Pago inicial de clases juno con inscripción");
+            createTransaction('payment',newStudent._id, firstPaymentAmount,firstPaymentDate, "Pago inicial de clases junto con inscripción");
             console.log('createdStudent: ' + createdStudent);
             res.send({msg: 'success', createdStudent: newStudent})
         }
@@ -236,7 +243,7 @@ app.post("/admin/register_student_payment", function (req,res,next) {
                 for(i = 0; i < payedCycles; i++){
                     newDeadline = getDateAfterCycle(student.paymentCycle, new Date (newDeadline));
                 }
-                Student.findOneAndUpdate({_id: refersTo}, {balance: newBalance,paymentDeadline: newDeadline ,lastPaymentMade: date}, {new: true},
+                Student.findOneAndUpdate({_id: refersTo}, {balance: newBalance,paymentDeadline: newDeadline ,lastPaymentMade: date, paymentLate: false}, {new: true},
                     (err, updatedStudent) => {
                     if(err) throw err;
                     console.log(updatedStudent);
@@ -270,49 +277,80 @@ app.post("/admin/register_student_payment", function (req,res,next) {
     }
 });
 
-function getStudentsWithOverduePayments(){
-    let lateStudents = [];
-    // first we update the info of all of the late students
-    Student.find({},(err,allStudents) => {
-        if(err) throw err;
-        allStudents.forEach((student) => {
-            let today = new Date();
-            let deadline = student.paymentDeadline; 
-            let cycle = student.paymentCycle;
-            if(today >= deadline) {
-                console.log("Enters if today >= student payment deadline");
-                console.log(student);
-                // get the difference between today and the deadline to know how many times it must be recalculated and how many charges should be drawn for the student
-                let dateDiff = differenceBetweenDates(cycle,new Date(today), new Date(deadline)); 
-                console.log('date diff is ' + dateDiff);
-                let chargeAmounts = 0;
-                let newDeadline = deadline;
-                console.log(newDeadline);
-                while(dateDiff >= 0){
-                    createTransaction('charge',student._id, student.paymentAmount, new Date(), 'Cargo por retraso en pago de clase');
-                    chargeAmounts += student.paymentAmount;
-                    newDeadline = getDateAfterCycle(cycle, new Date(newDeadline));
-                    dateDiff--;
-                } 
-                let newBalance = student.balance + chargeAmounts;
-                Student.findOneAndUpdate({_id: student._id}, {balance: newBalance,paymentDeadline: newDeadline }, {new: true},
-                    (err, updatedStudent) => {
-                    if(err) throw err;
-                    console.log('student info after charges and updated deadline' + updatedStudent);
+function getStudentsWithOverduePayments(cb){
+    return new Promise((resolve, reject) => {
+        let today = new Date();
+        Student.find({$and:[
+            {paymentLate: false, 
+                $or:[{
+                    paymentDeadline: {$lte: today}
+                }, {
+                    additionalAmountDeadline: {$lte: today},
+                    additionalBalance: {$gt: 0}
+                },]}]
+            },(err,allStudents) => {
+            if(err) return cb(err);
+            const promises = allStudents.map(student => {
+                return new Promise((resolve, reject) => {
+                    let deadline = student.paymentDeadline; 
+                    let cycle = student.paymentCycle;
+                    let update = {
+                        paymentLate: true
+                    }
+                    if(today >= deadline) {
+                        console.log("Enters if today >= student payment deadline");
+                        console.log(student);
+                        // get the difference between today and the deadline to know how many times it must be recalculated and how many charges should be drawn for the student
+                        let dateDiff = differenceBetweenDates(cycle,new Date(deadline), new Date(today)); 
+                        let chargeAmounts = 0;
+                        let newDeadline = deadline;
+                        let transactionObjs = [];
+                        while(dateDiff >= 0){
+                            transactionObjs.push({
+                                kind: "charge",
+                                referenceTo: student._id,
+                                amount: student.paymentAmount,
+                                date: new Date(),
+                                description: "Cargo por retraso en el pago de la clase"
+                            })
+                            chargeAmounts += student.paymentAmount;
+                            update.newDeadline = getDateAfterCycle(cycle, new Date(newDeadline));
+                            dateDiff--;
+                        } 
+                        update.balance = student.balance + chargeAmounts;
+                        console.log(transactionObjs);
+                        return Transaction.insertMany(transactionObjs)
+                        .then(transactions => {
+                            return Student.findOneAndUpdate({
+                                _id: student._id
+                            }, update, {
+                                new: true
+                            }).exec();
+                        })
+                        .then(updatedStudent => {
+                            return resolve(updatedStudent)
+                        })
+                        .catch(err => reject(err))
+                    } else if (student.additionalAmountDeadline <= today && student.additionalBalance > 0){
+                        
+                        return Student.findOneAndUpdate({
+                            _id: student._id
+                        },update, {
+                            new: true
+                        }).exec()
+                        .then(student => resolve(student))
+                        .catch(err => reject(err));
+                    } else return reject(new Error(`Student with id ${student._id} passed query but not requirements`))
+    
                 })
-                console.log(student)
-                lateStudents.push(student);
-            }
-            // else if the student's additional balance is greater than 0 and the deadline exceeds today
-            else if(student.additionalBalance && student.additionalAmountDeadline >= today) {
-                lateStudents.push(student);
-            }
+            })
+            return Promise.all(promises)
+            .then(students => resolve(students))
+            .catch(err => reject(err));
         });
-        console.log("late students array inside function: ");
-        console.log(lateStudents);
-        
-    });
-    return lateStudents;
+    })
+    
+    
 };
 
 function createTransaction(kind, referenceTo, amount, date, description){
@@ -347,10 +385,10 @@ function getDateAfterCycle(cycle, recievedDate){
 
 function differenceBetweenDates(cycle, date1, date2){
     if(cycle === 'Weekly'){
-            return weeksBetween(date1,date2);
+        return weeksBetween(date1,date2);
     }
     else if(cycle === 'Monthly' || cycle == 'Quarterly'){
-            return date2.getMonth()-date1.getMonth()
+        return date2.getMonth()-date1.getMonth()
     }
 }
 
