@@ -8,6 +8,7 @@ function DisplayLateStudents() {
       { title: 'Nombre', field: 'name' },
       { title: 'Teléfono', field: 'phone'},
       { title: 'Correo electrónico', field: 'email'},
+      { title: 'Adeudo', field: 'balance'}
     ],
     data: []
   });
