@@ -121,9 +121,7 @@ app.get("/admin/get_all_students", function(req,res,next){
         allStudents.forEach((student) => {
             let formattedLastPaymentMade = (student.lastPaymentMade != null) ? (student.lastPaymentMade.toLocaleDateString()) : ('Sin pagos'); 
             let formattedCycle = student.paymentCycle;
-            if(student.paymentLate){
-                lateStudents.push(student);
-            }
+            let formattedDeadline = student.paymentDeadline.toLocaleDateString();
             switch(formattedCycle) {
                 case 'Weekly': 
                     formattedCycle = 'Semanal';
@@ -145,9 +143,14 @@ app.get("/admin/get_all_students", function(req,res,next){
                 group: student.classGroup,
                 classBalance: student.balance,
                 additionalBalance: student.additionalBalance,
+                totalBalance: student.balance + student.additionalBalance,
                 cycle: formattedCycle,
                 lastPaymentMade: formattedLastPaymentMade,
+                deadline: formattedDeadline
             };
+            if(student.paymentLate){
+                lateStudents.push(studentInfo);
+            }
             allStudentsInfo.push(studentInfo);
         })
         console.log('late students before res send '+lateStudents);
@@ -305,7 +308,7 @@ function getStudentsWithOverduePayments(cb){
                         let chargeAmounts = 0;
                         let newDeadline = deadline;
                         let transactionObjs = [];
-                        while(dateDiff >= 0){
+                        while(dateDiff > 0){
                             transactionObjs.push({
                                 kind: "charge",
                                 referenceTo: student._id,
@@ -317,6 +320,7 @@ function getStudentsWithOverduePayments(cb){
                             update.newDeadline = getDateAfterCycle(cycle, new Date(newDeadline));
                             dateDiff--;
                         } 
+                        
                         update.balance = student.balance + chargeAmounts;
                         console.log(transactionObjs);
                         return Transaction.insertMany(transactionObjs)

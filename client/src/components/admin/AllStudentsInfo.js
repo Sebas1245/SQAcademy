@@ -17,7 +17,7 @@ export default function AllStudentsInfo(){
             { title: 'Adeudo de clases', field: 'classBalance', },
             { title: 'Adeudo de adicionales', field: 'additionalBalance', },
             { title: 'Ciclo de pago', field: 'cycle', },
-            { title: 'Último pago', field: 'lastPaymentMade', },
+            { title: 'Próximo pago', field: 'deadline', },
             
 
         ],

@@ -8,11 +8,11 @@ function DisplayLateStudents() {
       { title: 'Nombre', field: 'name' },
       { title: 'Teléfono', field: 'phone'},
       { title: 'Correo electrónico', field: 'email'},
-      { title: 'Adeudo', field: 'balance'}
+      { title: 'Adeudo', field: 'classBalance'},
+      { title: 'Último pago', field: 'lastPaymentMade'}
     ],
     data: []
   });
-
   React.useEffect(() => {
     axios
     .get("http://localhost:5000/admin/get_all_students")
