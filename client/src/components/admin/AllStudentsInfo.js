@@ -101,7 +101,7 @@ async function getStudentTransactionList(studentId) {
     console.log(studentId);
     try {
         const res = await axios
-            .get(`http://localhost:5000/admin/get_all_students/get_transactions/${studentId}`)
+            .get(`https://sq-academy.herokuapp.com/admin/get_all_students/get_transactions/${studentId}`)
             if(res.data.msg === 'success') {
                 return res.data.allTransactions;
             }    
