@@ -113,13 +113,11 @@ app.use('/admin', adminRoutes);
 // }
 // Redirects everything else to index
 app.get('/', (req, res) => {
-    const index = path.join(__dirname, 'build', 'index.html');
-    res.sendFile(index);
+    res.sendFile(path.resolve('../client/build/index.html'));
   });
   
 app.get('/*', (req,res) => {
-    const index = path.join(__dirname, 'build', 'index.html');
-    res.sendFile(index);
+  res.sendFile(path.resolve('../client/build/index.html'));
 })
 
 app.listen(PORT, () => {
