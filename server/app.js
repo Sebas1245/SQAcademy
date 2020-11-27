@@ -16,8 +16,7 @@ const   express = require('express'),
         // Routes
         adminRoutes = require('./routes/admin'); 
 
-let uri = 'MONGODB_URI';
-if(process.env.NODE_ENV==='test') uri+= '_TEST'    
+let uri = proccess.env.MONGODB_URI;   
 mongoose.connect(
     uri,
     {
