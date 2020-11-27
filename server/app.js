@@ -105,12 +105,12 @@ app.post("/login", function(req, res, next){
 app.use('/admin', adminRoutes);
 
 // passport middleware
-// function isLoggedIn(req,res,next){
-//     if (req.isAuthenticated()){
-//         return next();
-//     }
-//     throw console.error("User is not authenticated");
-// }
+function isLoggedIn(req,res,next){
+    if (req.isAuthenticated()){
+        return next();
+    }
+    throw console.error("User is not authenticated");
+}
 // Redirects everything else to index
 app.get('/', (req, res) => {
     res.sendFile(path.resolve('/app/client/build/index.html'));
