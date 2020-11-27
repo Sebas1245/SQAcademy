@@ -30,7 +30,7 @@ mongoose.connect(
     }
 )
 // Serves build
-app.use(express.static(path.resolve('../client/build')));
+app.use('static',express.static(path.join('/app/client/build/')));
 
 // Middleware
 app.use(bodyParser.json());
