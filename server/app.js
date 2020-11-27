@@ -30,7 +30,7 @@ mongoose.connect(
     }
 )
 // Serves build
-app.use('static',express.static(path.join('/app/client/build/')));
+app.use(express.static(('/app/client/build')));
 
 // Middleware
 app.use(bodyParser.json());
@@ -117,7 +117,7 @@ app.get('/', (req, res) => {
   });
   
 app.get('/*', (req,res) => {
-  res.sendFile(path.resolve('/app/client/build/index.html'));
+  res.sendFile(path.resolve('app/client/build/index.html'));
 })
 
 app.listen(PORT, () => {
