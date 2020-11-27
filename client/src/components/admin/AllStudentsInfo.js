@@ -25,7 +25,7 @@ export default function AllStudentsInfo(){
     })
     React.useEffect(() => {
         axios
-        .get("http://localhost:5000/admin/get_all_students")
+        .get("https://sq-academy.herokuapp.com/admin/get_all_students")
         .then((res) => {
             if(res.data.msg === 'success') {
                 setState({

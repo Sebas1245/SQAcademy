@@ -98,7 +98,7 @@ export default function BasicTextFields() {
             setOpenErrMsg(true);
         }
         else{
-            axios.post("http://localhost:5000/admin/register_student",
+            axios.post("https://sq-academy.herokuapp.com/admin/register_student",
                 {
                     name: state.fullName,
                     email: state.email,

@@ -43,7 +43,6 @@ export default function SignIn() {
   const login = (e) => {
     e.preventDefault();
     authentication.authenticate(loginUsername,loginPsswd, (err,auth) => {
-      console.log("Inside callback in SignInForm");
       if(err) {
         alert("Error de autenticación");
         authentication.isAuthenticated = false;

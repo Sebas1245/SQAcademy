@@ -10,7 +10,7 @@ const authentication = {
               password
             },
             withCredentials: true,
-            url: 'http://localhost:5000/login', // change url in development
+            url: 'https://sq-academy.herokuapp.com/login', // change url in production
         }).then((res) => {
           if(res.data.msg === 'success') {
               authentication.isAuthenticated = true;

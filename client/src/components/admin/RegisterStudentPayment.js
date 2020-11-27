@@ -85,7 +85,7 @@ export default function RegisterStudentPayment ({studentId, studentName}) {
         }
         else{
             axios
-            .post("http://localhost:5000/admin/register_student_payment",
+            .post("https://sq-academy.herokuapp.com/admin/register_student_payment",
             {
                 refersTo: studentId,
                 amount: state.amount,
