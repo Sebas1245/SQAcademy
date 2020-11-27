@@ -29,6 +29,8 @@ mongoose.connect(
         console.log("DB is connected")
     }
 )
+// Serves build
+app.use(express.static(path.resolve('../client/build')));
 
 // Middleware
 app.use(bodyParser.json());
@@ -82,8 +84,7 @@ function adminSetup() {
     });
 };
 
-// Serves build
-app.use(express.static(path.resolve('../client/build')));
+
 
 // Authentication route
 app.post("/login", function(req, res, next){
@@ -112,11 +113,13 @@ app.use('/admin', adminRoutes);
 // }
 // Redirects everything else to index
 app.get('/', (req, res) => {
-    res.sendFile(path.resolve('../client/build/index.html'));
+    const index = path.join(__dirname, 'build', 'index.html');
+    res.sendFile(index);
   });
   
 app.get('/*', (req,res) => {
-  res.sendFile(path.resolve('../client/build/index.html'));
+    const index = path.join(__dirname, 'build', 'index.html');
+    res.sendFile(index);
 })
 
 app.listen(PORT, () => {
